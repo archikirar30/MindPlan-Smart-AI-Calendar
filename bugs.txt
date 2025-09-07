@@ -1,0 +1,2 @@
+Fixed UnicodeEncodeError on Windows when writing README.
+Resolved tracker crash when DB table did not exist.

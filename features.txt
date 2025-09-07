@@ -1,0 +1,3 @@
+Track active apps and window titles on Windows.
+Log start time, end time, and duration of usage per app.
+Serve activity data via API endpoints.

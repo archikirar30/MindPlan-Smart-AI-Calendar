@@ -1,45 +1,66 @@
 import subprocess
-import re
 from pathlib import Path
+import re
 
+# Paths
 README_PATH = Path("README.md")
+FEATURES_FILE = Path("features.txt")
+BUGS_FILE = Path("bugs.txt")
 
-# Step 1: Get current pip dependencies
+# -------------------------------
+# 1️⃣ Get current pip dependencies
+# -------------------------------
 def get_dependencies():
     result = subprocess.run(["pip", "freeze"], capture_output=True, text=True)
     packages = result.stdout.strip().split("\n")
-    # Optional: remove versions for simplicity
+    # Simplify: remove versions
     packages_simple = [pkg.split("==")[0] for pkg in packages if "==" in pkg]
     return packages_simple
 
-# Step 2: Read README
-def read_readme():
-    if README_PATH.exists():
-        return README_PATH.read_text(encoding="utf-8")
-    return ""
+# -------------------------------
+# 2️⃣ Read README, Features, Bugs
+# -------------------------------
+def read_file(path):
+    return path.read_text(encoding="utf-8") if path.exists() else ""
 
-# Step 3: Replace Dependencies section
-def update_dependencies(readme_text, deps):
-    deps_text = "\n".join(f"- `{dep}`" for dep in deps)
-    new_section = f"## 📦 Dependencies\n\n{deps_text}\n\n> Keep this updated with `pip freeze > requirements.txt` after adding new packages."
+def read_list_file(path):
+    text = read_file(path)
+    return [line.strip() for line in text.splitlines() if line.strip()]
 
-    # Use regex to replace old Dependencies section
-    pattern = r"(## 📦 Dependencies\n\n)(.*?)(\n\n> Keep this updated.*?)"
+# -------------------------------
+# 3️⃣ Update sections
+# -------------------------------
+def update_section(header, items, readme_text):
+    """Replace or append section"""
+    section_text = f"## {header}\n\n" + "\n".join(f"- {item}" for item in items) + "\n"
+    pattern = rf"(## {re.escape(header)}\n\n.*?)(?=\n## |\Z)"
     if re.search(pattern, readme_text, flags=re.DOTALL):
-        readme_text = re.sub(pattern, new_section, readme_text, flags=re.DOTALL)
+        readme_text = re.sub(pattern, section_text, readme_text, flags=re.DOTALL)
     else:
-        # If Dependencies section does not exist, append at the end
-        readme_text += "\n\n" + new_section
+        readme_text += "\n" + section_text
     return readme_text
 
-# Step 4: Write back README
+# -------------------------------
+# 4️⃣ Write README
+# -------------------------------
 def write_readme(text):
-    README_PATH.write_text(text, encoding="utf-8")   # <- add encoding
-    print("✅ README.md dependencies updated!")
+    README_PATH.write_text(text, encoding="utf-8")
+    print("✅ README.md updated successfully!")
 
-# Main
+# -------------------------------
+# 5️⃣ Main
+# -------------------------------
 if __name__ == "__main__":
+    # Get data
     deps = get_dependencies()
-    readme = read_readme()
-    updated_readme = update_dependencies(readme, deps)
-    write_readme(updated_readme)
+    features = read_list_file(FEATURES_FILE)
+    bugs = read_list_file(BUGS_FILE)
+    readme_text = read_file(README_PATH)
+
+    # Update sections
+    readme_text = update_section("📦 Dependencies", deps, readme_text)
+    readme_text = update_section("⚡ Features", features, readme_text)
+    readme_text = update_section("📝 Updating the README", bugs, readme_text)
+
+    # Write README
+    write_readme(readme_text)
